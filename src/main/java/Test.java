@@ -21,22 +21,21 @@ import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Scanner;
+
 
 public class Test {
-    /** Application name. */
-    private static final String APPLICATION_NAME =
-        "Google Sheets API Java Quickstart";
+	/** Application name. */
+    private static final String APPLICATION_NAME = "Google Sheets API Java Quickstart";
 
     /** Directory to store user credentials for this application. */
-    private static final java.io.File DATA_STORE_DIR = new java.io.File(
-        System.getProperty("user.home"), ".credentials/sheets.googleapis.com-java-quickstart");
+    private static final java.io.File DATA_STORE_DIR = new java.io.File(System.getProperty("user.home"), ".credentials/sheets.googleapis.com-java-quickstart");
 
     /** Global instance of the {@link FileDataStoreFactory}. */
     private static FileDataStoreFactory DATA_STORE_FACTORY;
 
     /** Global instance of the JSON factory. */
-    private static final JsonFactory JSON_FACTORY =
-        JacksonFactory.getDefaultInstance();
+    private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
 
     /** Global instance of the HTTP transport. */
     private static HttpTransport HTTP_TRANSPORT;
@@ -99,41 +98,101 @@ public class Test {
 
     public static void main(String[] args) throws IOException {
         // Build a new authorized API client service.
-        Sheets service = getSheetsService();
+        Sheets sheetService = getSheetsService();
 
         // Prints the names and majors of students in a sample spreadsheet:
         // https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit
-        String spreadsheetId = "1i4vhY2diFtmpUKbTdbwvk3YEa1xyAgyjND2FBLG0qUM";
-        String range = "Sheet1!A2:E";
-        ValueRange response = service.spreadsheets().values()
-            .get(spreadsheetId, range)
-            .execute();
+        String spreadsheetId = "1OOx1_NDL6H4yd3kKBsSM0NHbBc_66uXZGkw2Sk3ryOg";
+        String range = "Sheet1!B2:F";
+        ValueRange response = sheetService.spreadsheets().values().get(spreadsheetId, range).execute();
         List<List<Object>> values = response.getValues();
         if (values == null || values.size() == 0) {
             System.out.println("No data found.");
         } else {
-          System.out.println("Name, Major");
-          for (List row : values) {
+        	values = blankTo0(values);
+        	System.out.println("Date, Card, Delivery, Cash");
+        	for (List row : values) {
             // Print columns A and E, which correspond to indices 0 and 4.
-            System.out.println(row.get(0) + ", " + row.get(1) + ", " + row.get(2) + ", " + row.get(3) + ", " + row.get(4));
+        		System.out.println(row.get(0) + ", " + row.get(1) + ", " + row.get(2) + ", " + row.get(3) + ", " + row.get(4));
           }
         }
+        
+    
+        
+        
+        System.out.println();
+        System.out.println("Save to File? Y/N");
+        
+        Scanner sc = new Scanner(System.in);
+        String userInput = sc.next();
+        sc.close();
+        
+        if (userInput.equals("Y")) {
+        	writeToFile(values);
+        } else if (userInput.equals("N")) {
+        	System.out.println("Closing...");
+        } else {
+        	System.out.println("Please enter a valid input.");
+        }
+        
+    }
+    
+    private static List<List<Object>> blankTo0 (List<List<Object>> values) {
+    	for (List row : values) {
+    		for (int i = 0; i < 5; i++) {
+    			if (row.get(i) == "") {
+    				row.set(i, "0");
+            	 }
+             }
+           }
+    	
+		return values;
     }
     
     //Practice wirting to file in json format
-    private void writeToFile(List<Object> values) throws FileNotFoundException, UnsupportedEncodingException {
+    private static void writeToFile(List<List<Object>> values) throws FileNotFoundException, UnsupportedEncodingException {
+    	System.out.println("Starting Write...");
     	File f = new File("records.json");
     	if(f.exists() && !f.isDirectory()) { 
     	    System.out.println("File already exists. Overwriting...");
+    	} else {
+    		System.out.println("File not found. Creating...");
     	}
     	
-    	if (values == null || values.size() == 0) {
-    		 System.out.println("No data found.");
-    	} else {
+    	try {
+			f.createNewFile();
+			System.out.println("File created.");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+   		
+   		if (values == null || values.size() == 0) {
+   			System.out.println("No data found.");
+   		} else {
+    		PrintWriter writer = new PrintWriter("records.json", "UTF-8");
+    		writer.println("{");
+    		writer.println("\t\"records\":[");
+
     		for (int i = 0; i < values.size(); i++) {
+    			writer.println("\t{");
+    			writer.println("\t\t\"date\" : \"" + values.get(i).get(0) + "\",");
+    			writer.println("\t\t\"card\" : \"" + values.get(i).get(1) + "\",");
+    			writer.println("\t\t\"delivery\" : \"" + values.get(i).get(2) + "\",");
+    			writer.println("\t\t\"cash\" : \"" + values.get(i).get(3) + "\",");
+    			writer.println("\t\t\"total\" : \"" + values.get(i).get(4) + "\"");
     			
+    			if (i != values.size() - 1) {
+    				writer.println("\t},");
+    			} else {
+    				writer.println("\t}");
+    			}
     		}
+    			
+    		writer.println("]}");
+    		writer.close();
     	}
+    	
+    	
     }
 
 
